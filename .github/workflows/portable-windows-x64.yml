@@ -18,7 +18,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Catálogos de tradução (inclui português do Brasil). Opcional: sem eles o app fica só em inglês.
       - name: Ler o commit do craft-i18n
@@ -27,7 +27,7 @@ jobs:
         run: |
           $rev = (Get-Content craft-i18n.rev | Where-Object { $_ -match '^[0-9a-f]{7,40}$' } | Select-Object -First 1).Trim()
           "rev=$rev" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: storytold/craft-i18n
           ref: ${{ steps.i18n.outputs.rev }}
@@ -41,7 +41,7 @@ jobs:
           rustup default stable
           rustc --version
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -56,7 +56,7 @@ jobs:
           if (Test-Path "$env:GITHUB_WORKSPACE\craft-i18n\locales") { $env:CRAFT_I18N_DIR = "$env:GITHUB_WORKSPACE\craft-i18n" }
           ./packaging/windows/build-portable-willian.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: PDF-PRO-Willian-portable-win11-x64
           path: dist/PDF-PRO-Willian-portable-win11-x64.zip
@@ -64,6 +64,6 @@ jobs:
 
       - name: Anexar à release (tags v*)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/PDF-PRO-Willian-portable-win11-x64.zip
