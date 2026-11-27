@@ -508,7 +508,8 @@ impl PdfCraftApp {
             pending_urls: Vec::new(),
             startup_superseded: false,
             startup_files: Vec::new(),
-            community_card_closed: false,
+            // The ArtCraft community card on Home is hidden in this build.
+            community_card_closed: true,
             pending_link: None,
             pending_window: None,
             pending_remote_link: None,
