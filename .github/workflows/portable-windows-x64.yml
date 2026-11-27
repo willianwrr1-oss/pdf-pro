@@ -1,0 +1,69 @@
+# Gera a versão portátil "PDF PRO Willian" para Windows 11 x64.
+#
+# Como usar: aba Actions > "Portable Windows x64" > Run workflow. Quando terminar, baixe o artefato
+# "PDF-PRO-Willian-portable-win11-x64" (um .zip com a pasta pronta). Ao publicar uma tag "v*", o
+# mesmo .zip também é anexado à release.
+name: Portable Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  portable:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      # Catálogos de tradução (inclui português do Brasil). Opcional: sem eles o app fica só em inglês.
+      - name: Ler o commit do craft-i18n
+        id: i18n
+        shell: pwsh
+        run: |
+          $rev = (Get-Content craft-i18n.rev | Where-Object { $_ -match '^[0-9a-f]{7,40}$' } | Select-Object -First 1).Trim()
+          "rev=$rev" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          repository: storytold/craft-i18n
+          ref: ${{ steps.i18n.outputs.rev }}
+          path: craft-i18n
+        continue-on-error: true
+
+      - name: Rust
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal --target x86_64-pc-windows-msvc
+          rustup default stable
+          rustc --version
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: portable-win-x64-${{ hashFiles('Cargo.lock') }}
+          restore-keys: portable-win-x64-
+
+      - name: Compilar e montar a pasta portátil
+        shell: pwsh
+        run: |
+          if (Test-Path "$env:GITHUB_WORKSPACE\craft-i18n\locales") { $env:CRAFT_I18N_DIR = "$env:GITHUB_WORKSPACE\craft-i18n" }
+          ./packaging/windows/build-portable-willian.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PDF-PRO-Willian-portable-win11-x64
+          path: dist/PDF-PRO-Willian-portable-win11-x64.zip
+          if-no-files-found: error
+
+      - name: Anexar à release (tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PDF-PRO-Willian-portable-win11-x64.zip
